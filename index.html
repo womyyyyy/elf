@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Selamat Ulang Tahun, Sayang! ❤️</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --primary-brown: #8B5A2B;
+            --accent-brown: #A0522D;
+            --light-brown-bg: #FDFBF7;
+            --soft-brown-card: rgba(245, 237, 227, 0.85);
+            --brown-text: #3D2612;
+            --brown-border: rgba(139, 90, 43, 0.2);
+            --brown-shadow: rgba(139, 90, 43, 0.12);
+        }
+
+        /* Prevent unwanted highlighting on iOS Safari */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light-brown-bg);
+            color: var(--brown-text);
+            overflow-x: hidden;
+            overscroll-behavior-y: none;
+            /* iOS Safe area paddings */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            min-height: 100vh;
+        }
+
+        .font-serif-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .font-handwriting {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Glassmorphism with webkit backdrop filter */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--brown-border);
+            box-shadow: 0 10px 25px -5px var(--brown-shadow);
+        }
+
+        /* Floating music icon pulse animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(139, 90, 43, 0.5); }
+            70% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(139, 90, 43, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(139, 90, 43, 0); }
+        }
+        .animate-music-pulse {
+            animation: pulse-ring 2.2s infinite;
+        }
+
+        /* High-DPI Canvas overlay */
+        #flowerCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Aesthetic Framed Polaroid Photo Card Styling */
+        .framed-photo-card {
+            background: #ffffff;
+            border: 1px solid rgba(210, 180, 140, 0.35);
+            box-shadow: 0 8px 20px -6px rgba(61, 38, 18, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+        }
+        
+        .framed-photo-card:hover, .framed-photo-card:active {
+            transform: scale(1.03) rotate(0deg) !important;
+            box-shadow: 0 14px 28px -6px rgba(61, 38, 18, 0.22), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+            z-index: 10;
+        }
+
+        /* Slight playful tilt angles for photo cards in grid */
+        .photo-tilt-left {
+            transform: rotate(-1.8deg);
+        }
+        .photo-tilt-right {
+            transform: rotate(1.8deg);
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between antialiased selection:bg-amber-100">
+
+    <!-- High-DPI Retina Petal Canvas -->
+    <canvas id="flowerCanvas"></canvas>
+
+    <!-- Top Right Fixed Music Player Controls -->
+    <header class="fixed top-0 right-0 left-0 z-50 pointer-events-none" style="padding-top: max(12px, env(safe-area-inset-top)); padding-right: max(12px, env(safe-area-inset-right));">
+        <div class="container mx-auto px-3 flex justify-end">
+            <div class="pointer-events-auto glass-card rounded-full p-1.5 pl-3 flex items-center gap-2 shadow-lg border">
+                <!-- Music Info Text -->
+                <div class="flex flex-col text-right max-w-[110px] sm:max-w-[160px]">
+                    <span id="songTitle" class="text-[11px] font-bold truncate leading-tight" style="color: var(--brown-text);">Memuat Lagu...</span>
+                    <span id="songArtist" class="text-[9px] text-stone-500 truncate">Sabar ya...</span>
+                </div>
+
+                <!-- Next / Randomize Track -->
+                <button id="nextTrackBtn" title="Lagu Berikutnya" class="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition active:scale-90" style="background-color: var(--soft-brown-card); color: var(--primary-brown);">
+                    <i class="fa-solid fa-shuffle text-xs"></i>
+                </button>
+
+                <!-- Mute / Unmute Toggle -->
+                <button id="muteBtn" title="Mute/Unmute" class="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center transition active:scale-90" style="background-color: var(--soft-brown-card); color: var(--primary-brown);">
+                    <i id="muteIcon" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+
+                <!-- Main Play/Pause Button -->
+                <button id="playAudioBtn" class="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-white shadow-md transition-all duration-300 active:scale-90" style="background-color: var(--primary-brown);">
+                    <i id="playIcon" class="fa-solid fa-play text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- iOS Audio Prompt -->
+    <div id="iosAudioPrompt" class="fixed top-20 left-1/2 -translate-x-1/2 z-40 glass-card px-4 py-2.5 rounded-full shadow-lg border flex items-center gap-2 text-xs font-semibold animate-bounce transition-all duration-300" style="color: var(--primary-brown);">
+        <i class="fa-solid fa-music"></i>
+        <span>Ketuk layar / tombol play untuk memutar musik 🎵</span>
+    </div>
+
+    <!-- Hidden Audio Element -->
+    <audio id="bgMusic" preload="auto" playsinline></audio>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 pt-20 md:pt-24 max-w-lg relative z-20 flex-grow">
+
+        <!-- Hero / Landing Section -->
+        <section class="text-center py-6 md:py-8 flex flex-col items-center">
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-2" style="color: var(--brown-text);">
+                Selamat Ulang Tahun,<br>
+                <span id="partnerName" class="font-handwriting text-5xl sm:text-7xl block my-1" style="color: var(--primary-brown);">Bebeee</span>
+            </h1>
+
+            <p class="text-xs sm:text-sm text-stone-600 max-w-xs font-medium px-2 leading-relaxed">
+                another year of you, another reason for me to be grateful.
+            </p>
+        </section>
+
+        <!-- All 6 Framed Photos Responsive Grid Section (9:11 Ratio) -->
+        <section class="my-6">
+            <div class="text-center mb-5">
+                <h2 class="text-lg sm:text-xl font-bold flex items-center justify-center gap-2" style="color: var(--brown-text);">
+                    <i class="fa-solid fa-images" style="color: var(--primary-brown);"></i> Galeri Foto
+                </h2>
+            </div>
+
+            <div id="photosGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4 max-w-[380px] sm:max-w-md mx-auto">
+                <!-- Framed photo cards generated dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- Interactive Wishes Section -->
+        <section class="my-8">
+            <div class="text-center mb-5">
+                <h2 class="text-xl sm:text-2xl font-bold" style="color: var(--brown-text);">My Wish For You</h2>
+            </div>
+
+            <div id="wishesGrid" class="grid grid-cols-1 gap-3.5">
+                <!-- Dynamic cards inserted here -->
+            </div>
+        </section>
+
+        <!-- Love Letter Button -->
+        <section class="my-8 text-center">
+            <div class="glass-card p-6 rounded-3xl border shadow-lg relative overflow-hidden">
+                <h3 class="text-lg font-bold mb-1" style="color: var(--brown-text);">Love Letter From Me</h3>
+                <p class="text-xs text-stone-500 mb-4">Buka love letter dari akuuu  </p>
+                <button id="openLoveLetterBtn" class="px-6 py-3 rounded-full text-xs font-bold text-white shadow-md active:scale-95 transition min-h-[44px] inline-flex items-center gap-2" style="background-color: var(--primary-brown);">
+                    <i class="fa-solid fa-envelope-open-text"></i> Buka 
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Love Letter Full Modal -->
+    <div id="loveLetterModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div id="letterModalBox" class="glass-card bg-white/95 max-w-sm w-full p-6 rounded-3xl shadow-2xl border text-center relative transform scale-90 transition-transform duration-300">
+            <button id="closeLoveLetterBtn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 w-9 h-9 flex items-center justify-center rounded-full bg-stone-100">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="text-4xl mb-3">🌹</div>
+            <h3 class="text-xl font-bold mb-3" style="color: var(--brown-text);">HAPPY SWEET SEVENTEEN, BEBEEE!! 🎂💗</h3>
+            <p id="customLoveLetter" class="font-handwriting text-1xl leading-relaxed text-stone-700 my-4">
+                Semoga kamu selalu bahagia, bahkan di hari-hari yang berat sekalipun. gaa nyangka akhirnya bisa nemenin kamu di hari spesial ini, yeayyy udah seventeen ajaa!!  aku nemenin kamu dari kita masih bocil, yaa. walaupun sempet ada beberapa problem selama bertahun-tahun, i'm glad we found our way back to each other and can be together again. semoga di umur kamu yang sekarang, segala urusan kamu dipermudah, rezekinya dilancarkan, dan semua hal baik selalu dateng ke kamu. i hope everything you've ever dreamed of comes true, be. aku bakal selalu support kamu di fase apa pun, so never feel like u have to face everything alone, okay? wish u all the best, sayanggg. semoga seventeen jadi salah satu chapter terindah dalam hidup kamu.
+            </p>
+            <div class="pt-2 text-xs font-bold uppercase tracking-wider text-stone-500">
+                LOVE U SO MUCHHH!! 💕
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Touch-Slide Gallery Lightbox Modal -->
+    <div id="sliderModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex flex-col justify-between p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        
+        <!-- Lightbox Top Navigation Bar with Fixed Close (X) Button -->
+        <div class="w-full flex items-center justify-between z-20 pt-2 px-2">
+            <span id="sliderCounter" class="text-white/80 text-xs font-medium tracking-widest bg-white/10 px-3 py-1 rounded-full">1 / 6</span>
+            <button id="closeSliderBtn" class="text-white text-2xl w-11 h-11 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/20 active:scale-90 transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Touch Swipe Slide Canvas Area -->
+        <div id="swipeArea" class="flex-grow w-full flex items-center justify-center relative overflow-hidden my-auto select-none touch-pan-y">
+            <div id="sliderWrapper" class="flex w-full h-full items-center transition-transform duration-300 ease-out">
+                <!-- Slides generated by JS -->
+            </div>
+        </div>
+
+        <!-- Lightbox Bottom Caption & Indicators -->
+        <div class="w-full flex flex-col items-center justify-center pb-4 z-20">
+            <p id="sliderCaption" class="text-white text-center font-medium text-sm mb-3 px-4 drop-shadow"></p>
+            <div id="sliderDots" class="flex items-center justify-center gap-2">
+                <!-- Dots generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-[10px] text-stone-400 py-4 relative z-20">
+        Dibuat khusus dengan ❤️ untuk ulang tahunmu.
+    </footer>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. JAVASCRIPT VARIABLES CONFIGURATION
+           ========================================================================== */
+        let partnerNameText = "Bebeee";
+
+        // Theme Intensity
+        let brownIntensity = 0.65; 
+        let primaryColor = '#8B5A2B'; 
+
+        // Flower Petals Quantity
+        let flowerCount = 35; 
+
+        let autoPlayRandom = true;
+
+        // Playlist Musik
+        let musicPlaylist = [
+            {
+                title: "AN ART GALLERY COULD NEVER BE AS UNIQUE AS YOU",
+                artist: "MRLD",
+                url: "1.mp3"
+            },
+            {
+                title: "Berapa Kali Kita Akan Saling Memaafkan",
+                artist: "Pamungkas",
+                url: "2.mp3"
+            },
+            {
+                title: "Here With Me",
+                artist: "d4vd",
+                url: "3.mp3"
+            }
+        ];
+
+        // 6 Foto Kenangan
+        let panoramaPhotos = [
+            {
+                url: "2.jpeg",
+                caption: "Our first photo after 2 years"
+            },
+            {
+                url: "3.jpeg",
+                caption: "Buriq dikit gak ngaruh"
+            },
+            {
+                url: "4.jpeg",
+                caption: "My fav picture"
+            },
+            {
+                url: "5.jpeg",
+                caption: "Elf jenggot"
+            },
+            {
+                url: "6.jpeg",
+                caption: "Elf ngaku angela"
+            },
+            {
+                url: "7.jpeg",
+                caption: "Our first photobooth"
+            }
+        ];
+
+        // Daftar Harapan
+        let initialWishes = [
+            {
+                title: "All Of Ur Days Filled Witgh Happiness",
+                text: "Semoga hal hal kecil dari harimu selalu menjadi menyenangkan Babeee.",
+                icon: "fa-heart"
+            },
+            {
+                title: "Hope All Ur Dreams Come True",
+                text: "Semoga semua yang kamu impikan dari dulu bisa terwujud dengan usaha keras kamu bebe.",
+                icon: "fa-heart"
+            },
+            {
+                title: "I Hope Life Treats U Kindly",
+                text: "Semoga di umur yang baru ini kamu selalu dikelilingi orang-orang baik, makin bahagia, and never forget how precious u are.",
+                icon: "fa-heart"
+            }
+        ];
+
+
+        /* ==========================================================================
+           2. DYNAMIC INTENSITY COLOR THEME ENGINE
+           ========================================================================== */
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            if (hex.length === 3) {
+                hex = hex.split('').map(c => c + c).join('');
+            }
+            let num = parseInt(hex, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function applyThemeIntensity() {
+            let intensity = Math.max(0.1, Math.min(1.0, brownIntensity));
+            let rgb = hexToRgb(primaryColor);
+
+            let r = Math.round(rgb.r * intensity);
+            let g = Math.round(rgb.g * intensity);
+            let b = Math.round(rgb.b * intensity);
+
+            let calculatedPrimary = `rgb(${r}, ${g}, ${b})`;
+            let calculatedSoftCard = `rgba(${r}, ${g}, ${b}, 0.08)`;
+            let calculatedBorder = `rgba(${r}, ${g}, ${b}, 0.2)`;
+            let calculatedText = `rgb(${Math.max(25, Math.round(r * 0.45))}, ${Math.max(15, Math.round(g * 0.45))}, ${Math.max(10, Math.round(b * 0.45))})`;
+
+            document.documentElement.style.setProperty('--primary-brown', calculatedPrimary);
+            document.documentElement.style.setProperty('--soft-brown-card', calculatedSoftCard);
+            document.documentElement.style.setProperty('--brown-border', calculatedBorder);
+            document.documentElement.style.setProperty('--brown-text', calculatedText);
+        }
+
+
+        /* ==========================================================================
+           3. MUSIC PLAYER & SAFARI iOS AUTOPLAY
+           ========================================================================== */
+        let currentSongIndex = 0;
+        let isMuted = false;
+        const bgMusic = document.getElementById('bgMusic');
+        const playAudioBtn = document.getElementById('playAudioBtn');
+        const playIcon = document.getElementById('playIcon');
+        const songTitle = document.getElementById('songTitle');
+        const songArtist = document.getElementById('songArtist');
+        const nextTrackBtn = document.getElementById('nextTrackBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const muteIcon = document.getElementById('muteIcon');
+        const iosAudioPrompt = document.getElementById('iosAudioPrompt');
+
+        function initMusicPlayer() {
+            if (autoPlayRandom) {
+                currentSongIndex = Math.floor(Math.random() * musicPlaylist.length);
+            }
+            loadSong(currentSongIndex);
+
+            playAudioBtn.addEventListener('click', togglePlayPause);
+            nextTrackBtn.addEventListener('click', playRandomNextTrack);
+            muteBtn.addEventListener('click', toggleMute);
+
+            bgMusic.addEventListener('ended', () => {
+                if (autoPlayRandom) {
+                    playRandomNextTrack();
+                } else {
+                    currentSongIndex = (currentSongIndex + 1) % musicPlaylist.length;
+                    loadSong(currentSongIndex);
+                    bgMusic.play();
+                }
+            });
+
+            const unlockAudio = () => {
+                if (bgMusic.paused) {
+                    bgMusic.play().then(() => {
+                        updatePlayUI(true);
+                        iosAudioPrompt.classList.add('opacity-0', 'pointer-events-none');
+                    }).catch(() => {});
+                }
+                document.removeEventListener('click', unlockAudio);
+                document.removeEventListener('touchstart', unlockAudio);
+            };
+
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+        }
+
+        function loadSong(index) {
+            if (!musicPlaylist || musicPlaylist.length === 0) return;
+            currentSongIndex = index;
+            let song = musicPlaylist[currentSongIndex];
+            bgMusic.src = song.url;
+            songTitle.textContent = song.title;
+            songArtist.textContent = song.artist;
+        }
+
+        function togglePlayPause() {
+            iosAudioPrompt.classList.add('opacity-0', 'pointer-events-none');
+            if (bgMusic.paused) {
+                bgMusic.play().then(() => {
+                    updatePlayUI(true);
+                }).catch(err => console.log("iOS Play interaction needed"));
+            } else {
+                bgMusic.pause();
+                updatePlayUI(false);
+            }
+        }
+
+        function updatePlayUI(isPlaying) {
+            if (isPlaying) {
+                playIcon.className = 'fa-solid fa-pause text-sm';
+                playAudioBtn.classList.add('animate-music-pulse');
+            } else {
+                playIcon.className = 'fa-solid fa-play text-sm';
+                playAudioBtn.classList.remove('animate-music-pulse');
+            }
+        }
+
+        function playRandomNextTrack() {
+            if (musicPlaylist.length <= 1) return;
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * musicPlaylist.length);
+            } while (newIndex === currentSongIndex);
+
+            loadSong(newIndex);
+            bgMusic.play().then(() => {
+                updatePlayUI(true);
+            }).catch(() => {});
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted;
+            muteIcon.className = isMuted ? 'fa-solid fa-volume-xmark text-xs text-rose-500' : 'fa-solid fa-volume-high text-xs';
+        }
+
+
+        /* ==========================================================================
+           4. ALL 6 FRAMED PHOTOS GRID & LIGHTBOX SLIDER WITH TOUCH SWIPE
+           ========================================================================== */
+        let currentSlideIndex = 0;
+        let startX = 0;
+        let currentTranslate = 0;
+        let prevTranslate = 0;
+        let isDragging = false;
+
+        function renderPhotosGrid() {
+            const grid = document.getElementById('photosGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            panoramaPhotos.forEach((photo, idx) => {
+                const tiltClass = idx % 2 === 0 ? 'photo-tilt-left' : 'photo-tilt-right';
+                const card = document.createElement('div');
+                card.className = `framed-photo-card p-2 rounded-2xl relative cursor-pointer ${tiltClass}`;
+                card.onclick = () => openSliderModal(idx);
+
+                card.innerHTML = `
+                    <!-- Mini Pin Marker -->
+                    <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-amber-600/80 rounded-full border border-white shadow-sm z-20 flex items-center justify-center">
+                        <div class="w-1 h-1 bg-white/90 rounded-full"></div>
+                    </div>
+
+                    <!-- 9:11 Aspect Ratio Container -->
+                    <div class="relative overflow-hidden rounded-xl bg-stone-100 aspect-[9/11] w-full shadow-inner">
+                        <img src="${photo.url}" alt="${photo.caption}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" loading="lazy">
+                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-2 pt-4">
+                            <p class="text-white text-[10px] sm:text-xs font-medium truncate text-center drop-shadow">
+                                ${photo.caption}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Lightbox Slider Setup
+        const sliderModal = document.getElementById('sliderModal');
+        const sliderWrapper = document.getElementById('sliderWrapper');
+        const sliderCounter = document.getElementById('sliderCounter');
+        const sliderCaption = document.getElementById('sliderCaption');
+        const sliderDots = document.getElementById('sliderDots');
+        const closeSliderBtn = document.getElementById('closeSliderBtn');
+        const swipeArea = document.getElementById('swipeArea');
+
+        function buildSliderContent() {
+            sliderWrapper.innerHTML = '';
+            sliderDots.innerHTML = '';
+
+            panoramaPhotos.forEach((photo, i) => {
+                // Slide Item
+                const slide = document.createElement('div');
+                slide.className = 'w-full h-full flex-shrink-0 flex items-center justify-center p-2';
+                slide.innerHTML = `
+                    <img src="${photo.url}" alt="${photo.caption}" class="max-h-[72vh] max-w-full w-auto h-auto object-contain rounded-2xl shadow-2xl border border-white/20 pointer-events-none">
+                `;
+                sliderWrapper.appendChild(slide);
+
+                // Indicator Dot
+                const dot = document.createElement('button');
+                dot.className = `w-2 h-2 rounded-full transition-all duration-300 ${i === currentSlideIndex ? 'bg-white w-5' : 'bg-white/40'}`;
+                dot.onclick = () => goToSlide(i);
+                sliderDots.appendChild(dot);
+            });
+        }
+
+        function openSliderModal(index) {
+            currentSlideIndex = index;
+            buildSliderContent();
+            updateSliderPosition();
+            sliderModal.classList.remove('opacity-0', 'pointer-events-none');
+            sliderModal.classList.add('opacity-100', 'pointer-events-auto');
+        }
+
+        function closeSliderModal() {
+            sliderModal.classList.remove('opacity-100', 'pointer-events-auto');
+            sliderModal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        closeSliderBtn.onclick = closeSliderModal;
+
+        function goToSlide(index) {
+            currentSlideIndex = index;
+            updateSliderPosition();
+        }
+
+        function updateSliderPosition() {
+            const width = swipeArea.clientWidth;
+            currentTranslate = -currentSlideIndex * width;
+            prevTranslate = currentTranslate;
+            sliderWrapper.style.transform = `translateX(${currentTranslate}px)`;
+
+            sliderCounter.textContent = `${currentSlideIndex + 1} / ${panoramaPhotos.length}`;
+            sliderCaption.textContent = panoramaPhotos[currentSlideIndex].caption;
+
+            // Update dots
+            const dots = sliderDots.children;
+            Array.from(dots).forEach((dot, i) => {
+                if (i === currentSlideIndex) {
+                    dot.className = 'w-5 h-2 rounded-full bg-white transition-all duration-300';
+                } else {
+                    dot.className = 'w-2 h-2 rounded-full bg-white/40 transition-all duration-300';
+                }
+            });
+        }
+
+        // Swipe Touch Handlers
+        swipeArea.addEventListener('touchstart', touchStart);
+        swipeArea.addEventListener('touchend', touchEnd);
+        swipeArea.addEventListener('touchmove', touchMove);
+
+        swipeArea.addEventListener('mousedown', touchStart);
+        swipeArea.addEventListener('mouseup', touchEnd);
+        swipeArea.addEventListener('mouseleave', touchEnd);
+        swipeArea.addEventListener('mousemove', touchMove);
+
+        function getPositionX(e) {
+            return e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+        }
+
+        function touchStart(e) {
+            isDragging = true;
+            startX = getPositionX(e);
+            sliderWrapper.classList.remove('transition-transform', 'duration-300');
+        }
+
+        function touchMove(e) {
+            if (!isDragging) return;
+            const currentPosition = getPositionX(e);
+            const diff = currentPosition - startX;
+            currentTranslate = prevTranslate + diff;
+            sliderWrapper.style.transform = `translateX(${currentTranslate}px)`;
+        }
+
+        function touchEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            sliderWrapper.classList.add('transition-transform', 'duration-300');
+            const movedBy = currentTranslate - prevTranslate;
+
+            if (movedBy < -50 && currentSlideIndex < panoramaPhotos.length - 1) {
+                currentSlideIndex += 1;
+            } else if (movedBy > 50 && currentSlideIndex > 0) {
+                currentSlideIndex -= 1;
+            }
+
+            updateSliderPosition();
+        }
+
+
+        /* ==========================================================================
+           5. RETINA HIGH-DPI CANVAS FLOATING PETALS ANIMATION
+           ========================================================================== */
+        const canvas = document.getElementById('flowerCanvas');
+        const ctx = canvas.getContext('2d');
+        let petals = [];
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        class Petal {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = Math.random() * -window.innerHeight;
+                this.size = Math.random() * 6 + 6;
+                this.speedY = Math.random() * 1.2 + 0.6;
+                this.speedX = Math.random() * 0.6 - 0.3;
+                this.angle = Math.random() * 360;
+                this.spin = Math.random() * 1.5 - 0.75;
+                let colors = [
+                    'rgba(255, 182, 193, 0.75)',
+                    'rgba(255, 228, 225, 0.85)',
+                    'rgba(210, 180, 140, 0.65)',
+                    'rgba(245, 222, 179, 0.7)'
+                ];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += Math.sin(this.y * 0.01) + this.speedX;
+                this.angle += this.spin;
+
+                if (this.y > window.innerHeight + 20) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.angle * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(-this.size, -this.size / 2, -this.size, this.size, 0, this.size * 1.4);
+                ctx.bezierCurveTo(this.size, this.size, this.size, -this.size / 2, 0, 0);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function initFlowerCanvas() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            petals = [];
+            for (let i = 0; i < flowerCount; i++) {
+                petals.push(new Petal());
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                petals.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(render);
+            }
+            render();
+        }
+
+
+        /* ==========================================================================
+           6. INTERACTIVE FEATURES (WISHES & LOVE LETTER MODAL)
+           ========================================================================== */
+        const wishesGrid = document.getElementById('wishesGrid');
+
+        function renderInitialWishes() {
+            wishesGrid.innerHTML = '';
+            initialWishes.forEach(wish => {
+                let card = document.createElement('div');
+                card.className = 'glass-card p-4 rounded-2xl shadow-sm border flex items-start gap-3';
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: var(--soft-brown-card); color: var(--primary-brown);">
+                        <i class="fa-solid ${wish.icon} text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xs sm:text-sm mb-0.5" style="color: var(--brown-text);">${wish.title}</h3>
+                        <p class="text-[11px] text-stone-600 leading-relaxed">${wish.text}</p>
+                    </div>
+                `;
+                wishesGrid.appendChild(card);
+            });
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 65,
+                    spread: 60,
+                    origin: { y: 0.65 },
+                    colors: ['#8B5A2B', '#D2B48C', '#FFB6C1', '#FFD700']
+                });
+            }
+        }
+
+        // Love Letter Modal Logic
+        const loveLetterModal = document.getElementById('loveLetterModal');
+        const letterModalBox = document.getElementById('letterModalBox');
+        const openLoveLetterBtn = document.getElementById('openLoveLetterBtn');
+        const closeLoveLetterBtn = document.getElementById('closeLoveLetterBtn');
+
+        function toggleLoveLetterModal(show) {
+            if (show) {
+                loveLetterModal.classList.remove('opacity-0', 'pointer-events-none');
+                loveLetterModal.classList.add('opacity-100', 'pointer-events-auto');
+                letterModalBox.classList.remove('scale-90');
+                letterModalBox.classList.add('scale-100');
+                triggerConfetti();
+            } else {
+                loveLetterModal.classList.remove('opacity-100', 'pointer-events-auto');
+                loveLetterModal.classList.add('opacity-0', 'pointer-events-none');
+                letterModalBox.classList.remove('scale-100');
+                letterModalBox.classList.add('scale-90');
+            }
+        }
+
+        openLoveLetterBtn.onclick = () => toggleLoveLetterModal(true);
+        closeLoveLetterBtn.onclick = () => toggleLoveLetterModal(false);
+
+        loveLetterModal.addEventListener('click', (e) => {
+            if (e.target === loveLetterModal) {
+                toggleLoveLetterModal(false);
+            }
+        });
+
+
+        /* ==========================================================================
+           7. INITIALIZATION ON LOAD
+           ========================================================================== */
+        window.onload = function() {
+            document.getElementById('partnerName').textContent = partnerNameText;
+            applyThemeIntensity();
+            
+            initMusicPlayer();
+            renderPhotosGrid();
+            initFlowerCanvas();
+            renderInitialWishes();
+        };
+    </script>
+</body>
+</html>
